@@ -1,0 +1,40 @@
+name: Snapshot-Meta
+on: workflow_dispatch
+jobs:
+  snapshot:
+    name: Snapshot
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --force --tags
+
+      - name: Clone Repository
+        run: git clone https://github.com/clash-next/clash-meta -b Meta && cp .goreleaser.yml clash-meta && cd clash-meta
+
+      - name: Create snapshot on GitHub
+        run: docker run --rm --privileged -e CGO_ENABLED=1 -e GITHUB_TOKEN=$GITHUB_TOKEN -v /var/run/docker.sock:/var/run/docker.sock -v `pwd`/clash-meta:/go/src/app -v /usr:/sysroot/usr -w /go/src/app goreleaser/goreleaser-cross:v1.21.5 release --snapshot --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get git tag
+        run: cd clash-meta && echo GIT_TAG=$(git rev-parse --short HEAD) >> $GITHUB_ENV
+
+      - name: Release snapshot on GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Snapshot-Meta ${{ env.GIT_TAG }}"
+          tag_name: ${{ env.GIT_TAG }}
+          prerelease: true
+          files: |
+            ./clash-meta/dist/checksums.txt
+            ./clash-meta/dist/*.tar.gz
+            ./clash-meta/dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

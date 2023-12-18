@@ -1,0 +1,141 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: darwin_amd64 
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=o64-clang
+      - CXX=o64-clang++
+    tags:
+      - with_gvisor
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+
+  - id: darwin_arm64
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    tags:
+      - with_gvisor
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+
+  - id: linux_amd64
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=gcc
+      - CXX=g++
+    tags:
+      - with_gvisor
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -extldflags '-static'
+
+  - id: linux_arm64
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    tags:
+      - with_gvisor
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -extldflags '-static'
+
+  - id: windows_i686
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=i686-w64-mingw32-gcc
+      - CXX=i686-w64-mingw32-g++
+    tags:
+      - with_gvisor
+    goos:
+      - windows
+    goarch:
+      - "386"
+    ldflags:
+      - -s -w
+      - -extldflags '-static'
+
+  - id: windows_amd64
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O3
+      - CGO_CXXFLAGS=-O3
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
+    tags:
+      - with_gvisor
+    goos:
+      - windows
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -extldflags '-static'
+
+archives:
+  - id: default
+    builds:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_i686
+      - windows_amd64
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: >-
+      {{- .ProjectName }}_
+      {{- .ShortCommit }}_
+      {{- .CommitTimestamp }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else if eq .Arch "686" }}i686
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .ShortCommit }}-{{ .CommitTimestamp }}-shapshot"
+
+changelog:
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
